@@ -19,7 +19,7 @@ Creating new playlists requires finding songs that are similar. The earliest wor
 # Modeling Approach and Project Trajectory
 After constructing the playlist data frame, we explored the influence of different predictors on the number of followers (the response variable). The first thing we noticed is that the response variable is heavily imbalanced (right-skewed), with a small number of extremely popular playlists:
 
-![logfollowers](/FIGURES/Followers_hist)
+![logfollowers](/Images/Followers_hist)
 
  We therefore predict the log(followers) for a given playlist, rather than the absolute number of followers. Playlists with zero followers (26) were removed from the dataset because it was assumed that these playlists may be not representative of the population of followed playlists - they may be intended to be listened to without users choosing to follow them (i.e. soothing background noise).
 
@@ -28,29 +28,29 @@ Interaction terms were included based on observation of predictor interaction. L
 ## KNN
 We started with KNN, as it is one of the simplest regression models. As a baseline, a KNN model was fit to all predictors in our data set to predict the log of followers for each playlist. This model performed poorly, with an R<sup>2</sup> of 0.05 on the testing set. We then fit a KNN model on the quantitative features only for each playlist in order to prevent the predictions from being too dependent on the indicator variables. This increased the R<sup>2</sup> to 0.23. We finally included the interaction terms of loudness and danceablilty for the final KNN regression, as we identified these as important predictors in our EDA. This increased the R<sup>2</sup> once again to 0.33.
 
-![KNN Regression](/FIGURES/KNN_REGRESSION.png)
+![KNN Regression](/Images/KNN_REGRESSION.png)
 
 ## Regularized (Ridge) Regression 
 The next approach we evaluated was Ridge regression. We first fit the log(followers) using only playlist popularity as predictor. This yielded an R<sup>2</sup> score of 0.12 on the test set. We then added in all the predictors, as well as second-order polynomial features for the continuous predictors, and interaction terms between loudness, danceability, speechiness, and tempo, as our EDA revealed these to have important interactions. The test R<sup>2</sup> score in this case soared to 0.48. We used cross-validation to estimate the optimal regularization parameter, which we found to be 0.1. The mean cross-validation score on the training set for this model was 0.45.
 
 We determined which predictors are most important by computing the absolute magnitudes of their fitted coefficients. These are the top 30 predictors:
-![ridge_top](/FIGURES/ridge_top_predictors.png)
+![ridge_top](/Images/ridge_top_predictors.png)
 
 An interesting result here is that the number of tracks seems to be by far the most important predictor of success -- more so than even mean song popularity -- as the top two predictors are both num_tracks variables.
 
 These are the bottom 30 predictors:
-![ridge_bot](/FIGURES/ridge_bot_predictors.png)
+![ridge_bot](/Images/ridge_bot_predictors.png)
 
 Based on this figure, the Key variables seem to be largely unimportant -- four of twelve of them fall into the bottom thirty predictors. Aside from the Key variables, we see an assortment of interaction terms mainly involving loudness.
 
 ## Gradient Boosted Regression Tree
 Gradient Boosted Regression was used to predict playlists to see if we could improve on typical methods of regression. All quantitative and indicator variables were used as predictors, including interaction terms discussed above. Data was split into test and training sets, and the training set was used to fit the model. Cross validation was used to determine the optimal model fit, which required a grid search for learning rate (range 0.1-0.01), maximum depth (4-12), minimum samples per leaf (3-7) and maximum number of features used for split decision (0.3-0.6). The optimal parameters were a learning rate of 0.01, maximum depth of 12, maximum number of features used of 0.3 and minimum samples per leaf of 7. The high value for minimum samples per leaf may in part have been chosen to compensate for the high maximum depth. Then a second grid search with cross validation was performed to find the optimal learning rate given the optimal parameters (range of 0.1-0.001 was used). The optimal learning rate remained 0.01, resulting in an $R^2$ score of 0.97, which is very high, likely due to overfitting to the training set, which is shown by the wide separation between test and train error in the deviance plot shown below.  
 
-![Deviance Plot](/FIGURES/GBRTree_deviance_plot)
+![Deviance Plot](/Images/GBRTree_deviance_plot)
 
 The most important quantitative predictors for tree splits were popularity and number of tracks, shown in the figure below, as expected because users will generally want popular songs and a large number of songs in a playlist. The interaction of these predictors with loudness were also important. The most important indicator variables (which will generally always have a lower number of splits because there are only 2 options to choose to split on 1 or 0) were genre related - pop and rock - and word related - mention of "remastered" or "remix" in song titles.
 
-![Predictor Importance](/FIGURES/GBRTree_predictors)
+![Predictor Importance](/Images/GBRTree_predictors)
 
 ## MLP
 The new method that was implemented is a neural network method called Multi-layer Perceptron. There is an sklearn package called MLPRegressor that can be used to implement MLP regression. The process was very similar to gradient boosted regression in that parameters were fit in a two-step process. The regularization parameter (alpha, range 0.1-0.00001) was first fit, and then activation, which is the function used for the hidden layer and the number of hidden layers (range 50-200). The optimal parameters were a regularization parameter of 0.1, a logistic function for the activation function, and using 200 hidden layers. 
@@ -68,7 +68,7 @@ In general, all the models, after being fit for optimal parameters, did relative
 
 The model that does the best based on cross validation scores using the training data set is Gradient Boosted Regression Tree with a 3-fold cross validation R<sup>2</sup> score on the training set of 0.55. This model was then evaluated using the test set and has a test R<sup>2</sup> score of 0.54. The residual plot, shown below, shows that the model does a good job overall. In general, the model struggles to predict the natural log of followers for playlists that have a low number of followers, shown by the larger residuals. The poor prediction for unpopular playlists could be due to factors not captured in our model. For example, some of the playlists with the lowest number of followers also have obscure and uninformative names like dw_g and dw_c.  
 
-![Residual Plot Test Set](/FIGURES/GBRTree_residual)
+![Residual Plot Test Set](/Images/GBRTree_residual)
 
 # Future Directions
 
